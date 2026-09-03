@@ -106,7 +106,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useCartStore } from '@/stores/cart'
@@ -122,10 +122,28 @@ const cart = useCartStore()
 const allProducts = [...jackets, ...shoes]
 const product = computed(() => allProducts.find(p => p.id === route.params.id))
 
-const selectedImage = ref(product.value?.images[0])
-const selectedSize = ref(product.value?.sizes[0] || '')
-const selectedColor = ref(product.value ? (locale.value === 'km' ? product.value.colors[0] : product.value.colorsEn[0]) : '')
+const selectedImage = ref('')
+const selectedSize = ref('')
+const selectedColor = ref('')
 const quantity = ref(1)
+
+function resetSelection() {
+  const p = product.value
+  if (!p) return
+  selectedImage.value = p.images[0]
+  selectedSize.value = p.sizes[0]
+  selectedColor.value = locale.value === 'km' ? p.colors[0] : p.colorsEn[0]
+  quantity.value = 1
+}
+
+watch(product, resetSelection, { immediate: true })
+watch(locale, () => {
+  const p = product.value
+  if (p) {
+    const idx = p.colorsEn.indexOf(selectedColor.value) > -1 ? p.colorsEn.indexOf(selectedColor.value) : p.colors.indexOf(selectedColor.value)
+    selectedColor.value = locale.value === 'km' ? p.colors[Math.max(0, idx)] : p.colorsEn[Math.max(0, idx)]
+  }
+})
 
 const relatedProducts = computed(() => {
   if (!product.value) return []
