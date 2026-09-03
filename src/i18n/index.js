@@ -12,6 +12,7 @@ const messages = {
       allProducts: 'ផលិតផលទាំងអស់',
       jacket: 'អាវធំ',
       shoe: 'ស្បែកជើង',
+      orders: 'ការបញ្ជាទិញរបស់ខ្ញុំ',
     },
     home: {
       title: 'សម្លៀកបំពាក់ប្រណីត',
@@ -108,6 +109,7 @@ const messages = {
       allProducts: 'All Products',
       jacket: 'Jacket',
       shoe: 'Shoe',
+      orders: 'My Orders',
     },
     home: {
       title: 'Premium Fashion',

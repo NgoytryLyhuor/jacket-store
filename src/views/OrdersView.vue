@@ -18,7 +18,7 @@
             <p class="text-xs text-gray-400">{{ formatDate(order.createdAt) }}</p>
           </div>
           <span class="text-xs font-semibold px-3 py-1.5 rounded-full bg-amber-100 text-amber-700">
-            {{ locale === 'km' ? 'រង់ចាំទំនាក់ទំនង' : 'Pending' }}
+            {{ statusText(order.status) }}
           </span>
         </div>
 
@@ -59,6 +59,13 @@ function formatDate(iso) {
   return d.toLocaleString(locale.value === 'km' ? 'km-KH' : 'en-US', {
     year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
   })
+}
+
+function statusText(status) {
+  if (locale.value === 'km') {
+    return status === 'completed' ? 'បញ្ចប់' : 'រង់ចាំទំនាក់ទំនង'
+  }
+  return status === 'completed' ? 'Completed' : 'Pending'
 }
 
 onMounted(() => {

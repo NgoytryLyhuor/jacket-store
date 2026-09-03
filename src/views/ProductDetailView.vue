@@ -107,7 +107,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useCartStore } from '@/stores/cart'
 import ProductGrid from '@/components/product/ProductGrid.vue'
@@ -116,7 +116,6 @@ import shoes from '@/data/shoes'
 
 const { t, locale } = useI18n()
 const route = useRoute()
-const router = useRouter()
 const cart = useCartStore()
 
 const allProducts = [...jackets, ...shoes]

@@ -21,6 +21,9 @@
           <router-link to="/shop/shoe" class="text-sm font-medium hover:text-primary-600 transition-colors">
             {{ t('nav.shoes') }}
           </router-link>
+          <router-link to="/orders" class="text-sm font-medium hover:text-primary-600 transition-colors">
+            {{ t('nav.orders') }}
+          </router-link>
         </nav>
 
         <!-- Right Side -->
@@ -67,6 +70,9 @@
             </router-link>
             <router-link to="/shop/shoe" @click="mobileOpen = false" class="px-4 py-2 rounded-lg hover:bg-gray-50 font-medium">
               {{ t('nav.shoes') }}
+            </router-link>
+            <router-link to="/orders" @click="mobileOpen = false" class="px-4 py-2 rounded-lg hover:bg-gray-50 font-medium">
+              {{ t('nav.orders') }}
             </router-link>
           </nav>
         </div>

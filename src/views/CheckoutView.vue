@@ -87,7 +87,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useCartStore } from '@/stores/cart'
 
@@ -103,8 +103,12 @@ const errors = reactive({ name: '', phone: '', address: '' })
 
 const PHONE_RE = /^(0[1-9]\d{7,8}|\+855[1-9]\d{7,8})$/
 
+function normalizePhone(phone) {
+  return phone.trim().replace(/[\s\-()]/g, '')
+}
+
 function isValidPhone(phone) {
-  return PHONE_RE.test(phone.trim())
+  return PHONE_RE.test(normalizePhone(phone))
 }
 
 function generateOrderNumber() {
@@ -136,12 +140,15 @@ async function placeOrder() {
 
   if (errors.name || errors.phone || errors.address) return
 
+  if (cart.items.length === 0) return
+
+  const normalizedPhone = normalizePhone(form.phone)
   const orderNumber = generateOrderNumber()
   const order = {
     orderNumber,
     customer: {
       name: form.name.trim(),
-      phone: form.phone.trim(),
+      phone: normalizedPhone,
       address: form.address.trim(),
     },
     notes: form.notes.trim(),
@@ -169,30 +176,24 @@ async function placeOrder() {
     })
     const data = await res.json().catch(() => ({ ok: false }))
 
-    // Save to local history regardless, so we never lose the order
-    saveOrderToHistory(order)
-
-    if (data.ok) {
-      lastOrderNumber.value = orderNumber
-      orderPlaced.value = true
-      cart.clearCart()
-    } else {
+    if (!data.ok) {
       // Notification failed but order preserved; tell user to call/telegram us.
       submitError.value = locale.value === 'km'
         ? 'មានបញ្ហាក្នុងការផ្ញើការបញ្ជាទិញតាម Telegram។ សូមទាក់ទងយើងខ្ញុំតាមលេខទូរស័ព្ទ។'
         : 'We could not send the order via Telegram automatically. Please contact us by phone.'
-      lastOrderNumber.value = orderNumber
-      orderPlaced.value = true
     }
   } catch (err) {
-    saveOrderToHistory(order)
     submitError.value = locale.value === 'km'
       ? 'មានបញ្ហាក្នុងការផ្ញើការបញ្ជាទិញ។ សូមទាក់ទងយើងខ្ញុំតាមលេខទូរស័ព្ទ។'
       : 'There was a problem sending your order. Please contact us by phone.'
-    lastOrderNumber.value = orderNumber
-    orderPlaced.value = true
-  } finally {
-    submitting.value = false
   }
+
+  // Save to local history regardless, so we never lose the order
+  saveOrderToHistory(order)
+  // The order is placed; clear the cart to prevent duplicate/phantom re-orders.
+  cart.clearCart()
+  lastOrderNumber.value = orderNumber
+  orderPlaced.value = true
+  submitting.value = false
 }
 </script>
