@@ -10,8 +10,13 @@
         </svg>
       </div>
       <h2 class="text-2xl font-bold mb-2">{{ locale === 'km' ? 'ការបញ្ជាទិញជោគជ័យ!' : 'Order Placed Successfully!' }}</h2>
+      <p class="text-gray-500 mb-2">{{ locale === 'km' ? 'លេខបញ្ជាទិញរបស់អ្នក៖' : 'Your order number:' }} <span class="font-bold text-primary-600">{{ lastOrderNumber }}</span></p>
       <p class="text-gray-500 mb-6">{{ locale === 'km' ? 'យើងនឹងទំនាក់ទំនងអ្នកឆាប់ៗនេះ។' : 'We will contact you soon.' }}</p>
-      <router-link to="/" class="btn-primary inline-block">{{ t('nav.home') }}</router-link>
+      <p v-if="submitError" class="text-amber-600 text-sm mb-6">{{ submitError }}</p>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <router-link to="/orders" class="btn-outline inline-block">{{ locale === 'km' ? 'មើលការបញ្ជាទិញរបស់ខ្ញុំ' : 'View My Orders' }}</router-link>
+        <router-link to="/" class="btn-primary inline-block">{{ t('nav.home') }}</router-link>
+      </div>
     </div>
 
     <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -37,7 +42,13 @@
             <label class="block text-sm font-medium mb-2">{{ t('checkout.notes') }}</label>
             <textarea v-model="form.notes" class="input-field" rows="3" :placeholder="t('checkout.notesPlaceholder')"></textarea>
           </div>
-          <button type="submit" class="w-full btn-primary text-lg py-4">{{ t('checkout.placeOrder') }}</button>
+          <button type="submit" :disabled="submitting" class="w-full btn-primary text-lg py-4 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+            <svg v-if="submitting" class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            {{ submitting ? (locale === 'km' ? 'កំពុងផ្ញើការបញ្ជាទិញ...' : 'Sending order...') : t('checkout.placeOrder') }}
+          </button>
         </form>
       </div>
 
@@ -76,7 +87,7 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useCartStore } from '@/stores/cart'
 
@@ -84,17 +95,104 @@ const { t, locale } = useI18n()
 const cart = useCartStore()
 
 const orderPlaced = ref(false)
+const submitting = ref(false)
+const submitError = ref('')
+const lastOrderNumber = ref('')
 const form = reactive({ name: '', phone: '', address: '', notes: '' })
 const errors = reactive({ name: '', phone: '', address: '' })
 
-function placeOrder() {
+const PHONE_RE = /^(0[1-9]\d{7,8}|\+855[1-9]\d{7,8})$/
+
+function isValidPhone(phone) {
+  return PHONE_RE.test(phone.trim())
+}
+
+function generateOrderNumber() {
+  const now = new Date()
+  const y = now.getFullYear()
+  const rand = Math.floor(10000 + Math.random() * 90000)
+  return `JS-${y}-${rand}`
+}
+
+function saveOrderToHistory(order) {
+  const existing = JSON.parse(localStorage.getItem('orders') || '[]')
+  existing.unshift(order)
+  localStorage.setItem('orders', JSON.stringify(existing.slice(0, 50)))
+}
+
+async function placeOrder() {
   errors.name = form.name ? '' : t('checkout.nameRequired')
-  errors.phone = form.phone ? '' : t('checkout.phoneRequired')
   errors.address = form.address ? '' : t('checkout.addressRequired')
+
+  if (!form.phone) {
+    errors.phone = t('checkout.phoneRequired')
+  } else if (!isValidPhone(form.phone)) {
+    errors.phone = locale.value === 'km'
+      ? 'សូមបញ្ចូលលេខទូរស័ព្ទត្រឹមត្រូវ (ឧ. 012345678 ឬ +85512345678)'
+      : 'Please enter a valid phone number (e.g. 012345678 or +85512345678)'
+  } else {
+    errors.phone = ''
+  }
 
   if (errors.name || errors.phone || errors.address) return
 
-  orderPlaced.value = true
-  cart.clearCart()
+  const orderNumber = generateOrderNumber()
+  const order = {
+    orderNumber,
+    customer: {
+      name: form.name.trim(),
+      phone: form.phone.trim(),
+      address: form.address.trim(),
+    },
+    notes: form.notes.trim(),
+    items: cart.items.map((item) => ({
+      id: item.id,
+      name: item.name,
+      nameEn: item.nameEn,
+      size: item.size,
+      color: item.color,
+      quantity: item.quantity,
+      price: item.price,
+    })),
+    subtotal: Number(cart.subtotal.toFixed(2)),
+    createdAt: new Date().toISOString(),
+    status: 'pending',
+  }
+
+  submitting.value = true
+  submitError.value = ''
+  try {
+    const res = await fetch('/api/send-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order }),
+    })
+    const data = await res.json().catch(() => ({ ok: false }))
+
+    // Save to local history regardless, so we never lose the order
+    saveOrderToHistory(order)
+
+    if (data.ok) {
+      lastOrderNumber.value = orderNumber
+      orderPlaced.value = true
+      cart.clearCart()
+    } else {
+      // Notification failed but order preserved; tell user to call/telegram us.
+      submitError.value = locale.value === 'km'
+        ? 'មានបញ្ហាក្នុងការផ្ញើការបញ្ជាទិញតាម Telegram។ សូមទាក់ទងយើងខ្ញុំតាមលេខទូរស័ព្ទ។'
+        : 'We could not send the order via Telegram automatically. Please contact us by phone.'
+      lastOrderNumber.value = orderNumber
+      orderPlaced.value = true
+    }
+  } catch (err) {
+    saveOrderToHistory(order)
+    submitError.value = locale.value === 'km'
+      ? 'មានបញ្ហាក្នុងការផ្ញើការបញ្ជាទិញ។ សូមទាក់ទងយើងខ្ញុំតាមលេខទូរស័ព្ទ។'
+      : 'There was a problem sending your order. Please contact us by phone.'
+    lastOrderNumber.value = orderNumber
+    orderPlaced.value = true
+  } finally {
+    submitting.value = false
+  }
 }
 </script>

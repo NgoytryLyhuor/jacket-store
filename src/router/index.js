@@ -46,6 +46,7 @@ const routes = [
   { path: '/product/:id', name: 'ProductDetail', component: () => import('@/views/ProductDetailView.vue') },
   { path: '/cart', name: 'Cart', component: () => import('@/views/CartView.vue') },
   { path: '/checkout', name: 'Checkout', component: () => import('@/views/CheckoutView.vue') },
+  { path: '/orders', name: 'Orders', component: () => import('@/views/OrdersView.vue') },
 ]
 
 const router = createRouter({
@@ -127,6 +128,10 @@ router.afterEach((to) => {
   if (path === '/checkout') {
     title = `Checkout | ${SITE_NAME}`
     description = 'ពិនិត្យចេញ និងបញ្ជាទិញ។ Complete your order with free delivery in Cambodia.'
+  }
+  if (path === '/orders') {
+    title = `ការបញ្ជាទិញរបស់ខ្ញុំ | ${SITE_NAME}`
+    description = 'មើលប្រវត្តិនៃការបញ្ជាទិញរបស់អ្នក។ View your order history.'
   }
 
   document.title = title
