@@ -33,7 +33,8 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['"Noto Sans Khmer"', '"Inter"', 'sans-serif'],
+        sans: ['"Noto Sans Khmer"', '"Plus Jakarta Sans"', 'sans-serif'],
+        display: ['"Plus Jakarta Sans"', '"Noto Sans Khmer"', 'sans-serif'],
       },
     },
   },
