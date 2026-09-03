@@ -24,7 +24,7 @@ const messages = {
       allShoes: 'ស្បែកជើងទាំងអស់',
       promoTitle: 'បញ្ចុះតម្លៃ ២០%',
       promoSubtitle: 'សម្រាប់ផលិតផលជាច្រើន',
-      promoCode: 'ប្រើកូด: SALE20',
+      promoCode: 'ប្រើលេខកូដ: SALE20',
     },
     shop: {
       title: 'ផលិតផលទាំងអស់',
